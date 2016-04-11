@@ -18,7 +18,9 @@
         return service;
     }
 
+    GeoCodeService.$inject = ['$http', 'Constants'];
+
     angular.module('geocode.service')
-        .factory('GeoCodeService', ['$http', 'Constants', GeoCodeService]);
+        .factory('GeoCodeService', GeoCodeService);
 
 }());

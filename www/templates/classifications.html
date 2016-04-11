@@ -1,0 +1,22 @@
+<ion-view title="Types ({{ctrl.items.length}})" id="page1">
+    <ion-nav-buttons side="right">
+        <button class="icon-bar button button-icon icon ion-ios-plus-empty" ng-click="ctrl.createItem()"></button>
+    </ion-nav-buttons>
+    <ion-content overflow-scroll="true" padding="true" class="has-header">
+        <article ng-repeat="item in ctrl.items | orderBy:'name' " class="item">
+            <section class="horizontal-panel bg-header padding">
+                {{item.name}}
+            </section>
+            <div class="horizontal-panel-around">
+                <section class="horizontal-panel action-bar height-40 padding">
+                    <div class="horizontal-panel-around">
+                        <button class="button button-icon icon icon-edit" ng-click="ctrl.editItem(item)">
+                        </button>
+                        <button class="button button-icon icon icon-delete" ng-click="ctrl.deleteItem(item)">
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </article>
+    </ion-content>
+</ion-view>

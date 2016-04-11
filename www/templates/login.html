@@ -1,0 +1,21 @@
+<ion-view title="Connexion" id="page1">
+    <ion-content overflow-scroll="true" padding="true" class="has-header">
+        <form role="form" ng-submit="ctrl.login()" class="form-login">
+            <section class="vertical-panel padding">
+                <label class="item-input padding">
+                    <span class="input-label">Utilisateur</span>
+                    <input type="text" ng-model="ctrl.user.username">
+                </label>
+                <label class="item-input padding">
+                    <span class="input-label">Mot de passe</span>
+                    <input type="password" ng-model="ctrl.user.password">
+                </label>
+            </section>
+            <section class="vertical-panel padding">
+                <button class="button button-clear button-positive" ng-click="submit">
+                    Login
+                </button>
+            </section>
+        </form>
+    </ion-content>
+</ion-view>

@@ -1,30 +1,35 @@
 (function () {
     'use strict';
 
-    function LoginCtrl($location, $rootScope, $http, $scope, Constants, AuthService) {
-
+    function LoginCtrl($http, $location, Constants, AuthService) {
         var viewModel = this;
 
         function authenticate(user, callback) {
-            var headers = user ? {
-                authorization: "Basic " + //
-                    btoa(user.username + ":" + //
-                        user.password)
-            } : {};
 
-            $http.get('login', {
-                    headers: headers
+            var basicAuth, headers;
+
+            basicAuth = "Basic " + //
+                btoa(user.username + ":" + user.password);
+
+
+            $http.post(Constants.DEFAULT_BACKEND_URL + '/' + 'login', {
+                    auth: basicAuth
                 })
-                .success(function (data) {
+                .success(function (data, status, headers, config) {
                     if (data.username) {
+                        $http.defaults.headers.common.Authorization = 'Bearer ' + data.token;
+                        //data.authorization = basicAuth;
+                        //data.token = headers(Constants.LOCAL_XSRF_TOKEN);
+                        //window.localStorage[Constants.LOCAL_XSRF_TOKEN] = data.token;
                         AuthService.setAuthenticatedUser(data);
+
                     } else {
                         $scope.$emit(Constants.DISPLAY_MSG_EVENT, "L'utilisateur et/ou le mot de passe sont incorrects.");
                     }
                     callback && callback();
                 }).error(function () {
                     AuthService.setAuthenticated(undefined);
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de l'authentification.");
+                    window.localStorage[Constants.LOCAL_XSRF_TOKEN] = '';
                     callback && callback();
                 });
 
@@ -32,10 +37,10 @@
 
         function onAuthentication() {
             if (AuthService.isLoggedIn()) {
-                $location.path('bottles');
+                $location.path('cave/bottles');
                 viewModel.error = false;
             } else {
-                $location.path("login");
+                $location.path("cave/login");
                 viewModel.error = true;
             }
         }
@@ -45,11 +50,12 @@
         }
 
         viewModel.login = login;
+
     }
 
-    LoginCtrl.$inject = ['$location', '$rootScope', '$http', '$scope', 'Constants', 'AuthService'];
+    LoginCtrl.$inject = ['$http', '$location', 'Constants', 'AuthService'];
 
-    angular.module('login.controller', [])
-        .controller('LoginCtrl', LoginCtrl);
+    angular.module('login.controller')
+        .controller('loginCtrl', LoginCtrl);
 
 }());

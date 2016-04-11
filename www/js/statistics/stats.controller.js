@@ -1,9 +1,7 @@
-//=require_self
-
 (function () {
     'use strict';
 
-    function StatsCtrl($scope, $rootScope, CrudService, Constants) {
+    function StatsCtrl(CrudService, Constants) {
 
         var viewModel = this;
 
@@ -25,24 +23,21 @@
             viewModel.dataPerClassif.push(item.quantity);
         }
 
-        CrudService.resource(Constants.REGIONS_URI + "/withcount")
+        CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.REGIONS_URI + "/withcount")
             .list(function onSuccess(response) {
                 response.forEach(fillRegionsStatistics);
             });
 
-        CrudService.resource(Constants.CLASSIFICATIONS_URI)
+        CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.CLASSIFICATIONS_URI)
             .list(function onSuccess(response) {
                 response.forEach(fillClassifStatistics);
             });
 
-        $rootScope.addItemElement = false;
-        $scope.$broadcast(Constants.SHOW_MENU_EVENT);
-
     }
 
-    StatsCtrl.$inject = ['$scope', '$rootScope', 'CrudService', 'Constants'];
+    StatsCtrl.$inject = ['CrudService', 'Constants'];
 
-    angular.module('stats.controller', [])
-        .controller('StatsCtrl', StatsCtrl);
+    angular.module('stats.controller')
+        .controller('statisticsCtrl', StatsCtrl);
 
 }());

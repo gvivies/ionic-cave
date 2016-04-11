@@ -4,7 +4,7 @@
 (function () {
     'use strict';
 
-    function AuthentService($rootScope) {
+    function AuthentService() {
 
         var authenticatedUser,
             service = {};

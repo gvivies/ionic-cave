@@ -1,0 +1,22 @@
+<ion-modal-view class="modal-content">
+    <form>
+        <ion-header-bar class="bar bar-header bg-menu-bar">
+            <h1 class="title">Détail du type</h1>
+            <button class="button button-icon icon ion-ios-close-empty icon-bar" ng-click="closeModal()"></button>
+        </ion-header-bar>
+        <ion-content has-header="true" padding="true">
+            <section class="vertical-panel padding">
+                <label class="item-form item-input">
+                    <span class="input-label">Type</span>
+                    <input type="text" ng-model="item.name">
+                </label>
+            </section>
+            <section class="horizontal-panel height-40">
+                <div class="horizontal-panel-around ">
+                    <button class="button button-clear button-stable " ng-click="closeModal() ">Annuler</button>
+                    <button class="button button-clear button-positive " ng-click="saveItem(item) ">Enregistrer</button>
+                </div>
+            </section>
+        </ion-content>
+    </form>
+</ion-modal-view>

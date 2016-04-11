@@ -1,110 +1,104 @@
-//=require_self
-
 (function () {
-
     'use strict';
 
-    function WinesCtrl($scope, $rootScope, CrudService, Constants, FormService, UtilService, $mdDialog, ConfirmService) {
+    function WinesCtrl(Constants, CrudService, FormService, AuthService, UtilService) {
 
         var viewModel = this,
-            listRegions = [],
-            formLists = [];
+            formLists = [],
+            dialog;
 
-        // --- Handler functions 
-        function onShowMenuEventHandler() {
-            viewModel.displayMenu = true;
+        function onModuleLoad() {
+            viewModel.items = CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINES_URI).list();
+            initEditForm();
         }
 
-        function onHideMenuEventHandler() {
-            viewModel.displayMenu = false;
-        }
-
-        function createItemHandler() {
-            FormService.showForm($scope, {}, viewModel.formSettings);
-        }
-
-        function editItemHandler(item) {
-            FormService.showForm($scope, UtilService.clone(item), viewModel.formSettings);
-        }
-
-        function onCreatedItemEventHandler(event, item) {
-            viewModel.items.push(item);
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Le vin " + item.name + " a été créé avec succès");
-        }
-
-        function onUpdatedItemEventHandler(event, item) {
-            var idx = UtilService.getIndex(item.id, viewModel.items);
-            if (idx >= 0) {
-                viewModel.items[idx] = item;
-            }
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Le vin " + item.name + " a été modifié avec succès");
-        }
-
-        function deleteItemHandler(item) {
-
-            function removeItem() {
-
-                function onRemoveError() {
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
-                }
-
-                function onRemoveSuccess() {
-                    var itemList = $scope.ctrl.items,
-                        idx = itemList.indexOf(item);
-                    itemList.splice(idx, 1);
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "La suppression de " + item.name + " a été effectuée avec succès");
-                }
-
-                CrudService.resource(Constants.WINES_URI + '/' + item.id)
-                    .remove(onRemoveSuccess, onRemoveError);
-            }
-
-            ConfirmService.confirmDelete(item, 'le vin')
-                .then(removeItem);
-        }
-
-        function filterWinesHandler(wine) {
-            return (UtilService.isBlank(viewModel.region) || viewModel.region.name == wine.region.name);
-        }
-
-        function initWineForm(listRegions) {
-            formLists.push({
-                'name': 'regions',
-                'content': listRegions
-            });
+        // Fill regions select objects list 
+        // and declares setings parameter for wine form
+        function initEditForm() {
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.REGIONS_URI)
+                .list(function (listRegions) {
+                    formLists.push({
+                        'name': 'regions',
+                        'content': listRegions
+                    });
+                    viewModel.regions = listRegions;
+                    viewModel.regions.unshift({
+                        'name': ''
+                    });
+                });
 
             viewModel.formSettings = {
-                size: "xxl",
-                template: "wine.html",
-                uri: Constants.WINES_URI,
+                templateUrl: 'templates/wine.html',
                 lists: formLists
             };
         }
 
-        // --- Attaching functions and events handler
+        function updateItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINES_URI)
+                .update(item, function onSaveSuccess() {
+                    // Updated in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    if (idx >= 0) {
+                        viewModel.items[idx] = item;
+                    }
+                }, function onSaveError() {
+                    // TODO Error message
+                });
+        }
+
+        function insertItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINES_URI)
+                .create(item, function onSaveSuccess() {
+                    // Insert in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    viewModel.items.push(item);
+                }, function onSaveError() {
+                    // TODO Error message
+                });
+        }
+
+        function editItemHandler(item) {
+            viewModel.formSettings.save = updateItem;
+            dialog = FormService.show(UtilService.clone(item), viewModel.formSettings);
+        }
+
+        function createItemHandler() {
+            viewModel.formSettings.save = insertItem;
+            dialog = FormService.show({}, viewModel.formSettings);
+        }
+
+        function deleteItemHandler(item) {
+            if (confirm("Voulez-vous vraiment supprimer cette appellation ?")) {
+                CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINES_URI + '/' + item.id)
+                    .remove(
+                        function onRemoveSuccess() {
+                            var idx = viewModel.items.indexOf(item);
+                            viewModel.items.splice(idx, 1);
+                        },
+                        function onRemoveError() {
+                            //$scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
+                        });
+            }
+        }
+
+        function filterWinesHandler(wine) {
+            return (UtilService.isBlank(viewModel.regionFilter) || viewModel.regionFilter.name == wine.region.name);
+        }
 
         viewModel.editItem = editItemHandler;
+        viewModel.createItem = createItemHandler;
         viewModel.deleteItem = deleteItemHandler;
         viewModel.filterWines = filterWinesHandler;
 
-        $scope.$on(Constants.CREATED_ITEM_EVENT, onCreatedItemEventHandler);
-        $scope.$on(Constants.UPDATED_ITEM_EVENT, onUpdatedItemEventHandler);
-        $scope.$on(Constants.SHOW_MENU_EVENT, onShowMenuEventHandler);
-        $scope.$on(Constants.HIDE_MENU_EVENT, onHideMenuEventHandler);
-        $scope.$on(Constants.ADD_CLICK_EVENT, createItemHandler);
-
-        // --- On load
-
-        viewModel.items = CrudService.resource(Constants.WINES_URI).list();
-        viewModel.regions = CrudService.resource(Constants.REGIONS_URI).list(initWineForm);
-        viewModel.region = {};
-        $rootScope.addItemElement = true;
-        $scope.$emit(Constants.SHOW_MENU_EVENT);
+        onModuleLoad();
     }
 
-    WinesCtrl.$inject = ['$scope', '$rootScope', 'CrudService', 'Constants', 'FormService', 'UtilService', '$mdDialog', 'ConfirmService'];
+    WinesCtrl.$inject = ['Constants', 'CrudService', 'FormService', 'AuthService', 'UtilService'];
 
-    angular.module('wines.controller', [])
-        .controller('WinesCtrl', WinesCtrl);
+    angular.module('wines.controller')
+        .controller('winesCtrl', WinesCtrl);
+
 
 }());

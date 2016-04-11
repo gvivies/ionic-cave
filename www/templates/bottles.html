@@ -1,0 +1,43 @@
+<ion-view title="Bouteilles ({{ctrl.nbBottles}})" id="page1" class="">
+
+<ion-nav-buttons side="right">
+    <button class="icon-bar button button-icon icon ion-ios-plus-empty" ng-click="ctrl.createItem()"></button>
+</ion-nav-buttons>
+    <ion-content overflow-scroll="true" padding="true" class="has-header">
+        <article ng-repeat="item in ctrl.items | orderBy:'name' " class="item">
+            <section class="horizontal-panel bg-header padding">
+                {{item.name}}
+            </section>
+            <section class="vertical-panel padding">
+                <section class="horizontal-panel">
+                    <div class="vertical-panel">
+                        <label class="wine">{{item.wine.name}}</label>
+                    </div>
+                    <div class="vertical-panel-right">
+                        <div class="badge-qty">
+                            <label class="quantity">{{item.quantity}}</label>
+                        </div>
+                    </div>
+                </section>
+                <section class="horizontal-panel">
+                    <label class="">{{item.year}}</label>
+                </section>
+                <section class="horizontal-panel">
+                    <label class="">{{item.classification.name}}</label>
+                </section>
+                <section class="horizontal-panel">
+                    <label class="">A boire entre {{item.yearMin}} et {{item.yearMax}}</label>
+                </section>
+            </section>
+            <section class="horizontal-panel action-bar height-40">
+                <div class="horizontal-panel-around">
+                    <button class="button button-icon icon icon-drink" ng-click="ctrl.drink(item)"></button>
+                    <button class="button button-icon icon icon-edit" ng-click="ctrl.editItem(item)">
+                    </button>
+                    <button class="button button-icon icon icon-delete" ng-click="ctrl.deleteItem(item)">
+                    </button>
+                </div>
+            </section>
+        </article>
+    </ion-content>
+</ion-view>

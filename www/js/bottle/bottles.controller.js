@@ -1,171 +1,148 @@
-//=require_self
-
 (function () {
-
     'use strict';
 
-    function BottlesCtrl($scope, $rootScope, CrudService, Constants, FormService, UtilService, $mdDialog, ConfirmService, $routeParams) {
+
+
+    function BottlesCtrl(Constants, CrudService, FormService, UtilService, AuthService) {
 
         var viewModel = this,
             listWines = [],
             listWineries = [],
             listClassifications = [],
-            formLists = [];
+            formLists = [],
+            dialog;
 
-        // --- Handler functions 
-        function onShowMenuEventHandler() {
-            viewModel.displayMenu = true;
+        function onModuleLoad() {
+            initBottleForm();
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.BOTTLES_URI)
+                .list(populate);
         }
 
-        function onHideMenuEventHandler() {
-            viewModel.displayMenu = false;
+        function populate(bottles) {
+            var nb = 0;
+            bottles.forEach(function (bottle) {
+                nb += bottle.quantity;
+            });
+            viewModel.nbBottles = nb;
+            viewModel.items = bottles;
         }
 
-        function createItemHandler() {
-            FormService.showForm($scope, {}, viewModel.formSettings);
+        function updateItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.BOTTLES_URI)
+                .update(item, function onSaveSuccess() {
+                    // Updated in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    if (idx >= 0) {
+                        viewModel.items[idx] = item;
+                    }
+                }, function onSaveError() {
+                    // TODO Error message
+                });
         }
 
-        function editItemHandler(item) {
-            FormService.showForm($scope, UtilService.clone(item), viewModel.formSettings);
+        function insertItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.BOTTLES_URI)
+                .create(item, function onSaveSuccess() {
+                    // Insert in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    viewModel.items.push(item);
+                }, function onSaveError() {
+                    // TODO Error message
+                });
         }
 
-        function onCreatedItemEventHandler(event, item) {
-            viewModel.items.push(item);
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Les bouteilles " + item.name + " ont été créées avec succès");
-        }
-
-        function onUpdatedItemEventHandler(event, item) {
-            var idx = UtilService.getIndex(item.id, viewModel.items);
-            if (idx >= 0) {
-                viewModel.items[idx] = item;
-            }
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Les bouteilles " + item.name + " ont été modifiées avec succès");
-        }
-
-        function deleteItemHandler(item) {
-            function removeItem() {
-                function onRemoveError() {
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
-                }
-
-                function onRemoveSuccess() {
-                    var itemList = $scope.ctrl.items,
-                        idx = itemList.indexOf(item);
-                    itemList.splice(idx, 1);
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "La suppression de " + item.name + " a été effectuée avec succès");
-                }
-                CrudService.resource(Constants.BOTTLES_URI + '/' + item.id)
-                    .remove(onRemoveSuccess, onRemoveError);
-            }
-            ConfirmService.confirmDelete(item, 'les bouteills')
-                .then(removeItem);
-        }
-
-        function drinkHandler(item) {
-            function drinkOne() {
-                function onDrinkError() {
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la modification du nombre de bouteilles");
-                }
-
-                function onDrinkSuccess(data) {
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une bouteille a été enlevée avec succès !");
-                    item.quantity = data.quantity;
-                }
-                CrudService.resource(Constants.DRINK_BOTTLE_URI)
-                    .update(item, onDrinkSuccess, onDrinkError);
-            }
-
-            ConfirmService.confirmDrink(item)
-                .then(drinkOne);
-        }
-
-        function filterBottlesHandler(bottle) {
-            if (!UtilService.isBlank(viewModel.region) && viewModel.region.name !== bottle.wine.region.name) {
-                return false;
-            }
-            if (!UtilService.isBlank(viewModel.classification) && viewModel.classification.name !== bottle.classification.name) {
-                return false;
-            }
-            return true;
-        }
-
-        function afterRegionsLoad(regions) {
-            if (!UtilService.isBlank($routeParams.region)) {
-                viewModel.region = regions[UtilService.getIndex($routeParams.region, regions)];
-            }
-        }
-
-        function isExportVisible() {
-            return !UtilService.isMobileDevice();
-        }
-
-        // --- Attaching functions and events handler
-
-        viewModel.editItem = editItemHandler;
-        viewModel.deleteItem = deleteItemHandler;
-        viewModel.drink = drinkHandler;
-        viewModel.filterBottles = filterBottlesHandler;
-        viewModel.isExportVisible = isExportVisible;
-
-        $scope.$on(Constants.CREATED_ITEM_EVENT, onCreatedItemEventHandler);
-        $scope.$on(Constants.UPDATED_ITEM_EVENT, onUpdatedItemEventHandler);
-        $scope.$on(Constants.SHOW_MENU_EVENT, onShowMenuEventHandler);
-        $scope.$on(Constants.HIDE_MENU_EVENT, onHideMenuEventHandler);
-        $scope.$on(Constants.ADD_CLICK_EVENT, createItemHandler);
-
-        // --- On load
-
+        // Fill all select objects list : wines, wineries and classifications
+        // and declare setings parameter for bottles form
         function initBottleForm() {
-            CrudService.resource(Constants.WINES_URI).list(function (listWines) {
-                formLists.push({
-                    'name': 'wines',
-                    'content': listWines
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINES_URI)
+                .list(function (listWines) {
+                    formLists.push({
+                        'name': 'wines',
+                        'content': listWines
+                    });
                 });
-            });
-            CrudService.resource(Constants.WINERIES_URI).list(function (listWineries) {
-                formLists.push({
-                    'name': 'wineries',
-                    'content': listWineries
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINERIES_URI)
+                .list(function (listWineries) {
+                    formLists.push({
+                        'name': 'wineries',
+                        'content': listWineries
+                    });
                 });
-            });
-            viewModel.classifications = CrudService.resource(Constants.CLASSIFICATIONS_URI).list(function (listClassifications) {
-                formLists.push({
-                    'name': 'classifications',
-                    'content': listClassifications
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.CLASSIFICATIONS_URI)
+                .list(function (listClassifications) {
+                    formLists.push({
+                        'name': 'classifications',
+                        'content': listClassifications
+                    });
+                    viewModel.classifications = listClassifications;
+                    /*
+                    if (!UtilService.isBlank($routeParams.classif)) {
+                        viewModel.classification = listClassifications[UtilService.getIndex($routeParams.classif, listClassifications)];
+                    }*/
                 });
-                if (!UtilService.isBlank($routeParams.classif)) {
-                    viewModel.classification = listClassifications[UtilService.getIndex($routeParams.classif, listClassifications)];
-                }
-            });
+
             viewModel.formSettings = {
-                size: "xxl",
-                template: "bottle.html",
-                uri: Constants.BOTTLES_URI,
+                templateUrl: 'templates/bottle.html',
                 lists: formLists
             };
         }
 
-        viewModel.regions = CrudService.resource(Constants.REGIONS_URI).list(afterRegionsLoad);
-        viewModel.items = CrudService.resource(Constants.BOTTLES_URI).list(initBottleForm);
-        viewModel.exportHeaders = {
-            name: 'Nom',
-            'wine.name': 'Appellation',
-            'wine.region.name': 'Region',
-            'dealer.name': 'Domaine',
-            'classification.name': 'Type',
-            year: 'Millesime',
-            quantity: 'Quantite',
-            price: 'Price'
-        };
-        $rootScope.addItemElement = true;
-        $scope.$emit(Constants.SHOW_MENU_EVENT);
+        function drinkHandler(item) {
+            function drinkOne() {
+                CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.DRINK_BOTTLE_URI)
+                    .update(item, function onDrinkSuccess(data) {
+                        //$scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une bouteille a été enlevée avec succès !");
+                        item.quantity = data.quantity;
+                    }, function onDrinkError() {
+                        //
+                    });
+            }
+
+            if (confirm("Voulez-vous vraiment boire une bouteille de " + item.name + " ?")) {
+                drinkOne();
+            }
+
+        }
+
+        function editItemHandler(item) {
+            viewModel.formSettings.save = updateItem;
+            dialog = FormService.show(UtilService.clone(item), viewModel.formSettings);
+        }
+
+        function createItemHandler() {
+            viewModel.formSettings.save = insertItem;
+            dialog = FormService.show({}, viewModel.formSettings);
+        }
+
+        function deleteItemHandler(item) {
+            if (confirm("Voulez-vous vraiment supprimer ces bouteilles ?")) {
+                CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.BOTTLES_URI + '/' + item.id)
+                    .remove(
+                        function onRemoveSuccess() {
+                            var idx = viewModel.items.indexOf(item);
+                            viewModel.items.splice(idx, 1);
+                            //$scope.$emit(Constants.DISPLAY_MSG_EVENT, "La suppression de " + item.name + " a été effectuée avec succès");
+                        },
+                        function onRemoveError() {
+                            //$scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
+                        });
+            }
+        }
+
+        viewModel.editItem = editItemHandler;
+        viewModel.createItem = createItemHandler;
+        viewModel.deleteItem = deleteItemHandler;
+        viewModel.drink = drinkHandler;
+
+        onModuleLoad();
 
     }
 
-    BottlesCtrl.$inject = ['$scope', '$rootScope', 'CrudService', 'Constants', 'FormService', 'UtilService', '$mdDialog', 'ConfirmService', '$routeParams'];
+    BottlesCtrl.$inject = ['Constants', 'CrudService', 'FormService', 'UtilService', 'AuthService'];
 
     angular.module('bottles.controller')
-        .controller('BottlesCtrl', BottlesCtrl);
-
+        .controller('bottlesCtrl', BottlesCtrl);
 
 }());

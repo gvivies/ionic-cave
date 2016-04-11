@@ -2,7 +2,7 @@
 
     'use strict';
 
-    function locationDirective(Constants, $mdDialog, uiGmapIsReady, $timeout) {
+    function LocationDirective(Constants, $ionicModal, uiGmapIsReady, $timeout) {
 
         function LocationCtrl($scope) {
 
@@ -10,7 +10,6 @@
 
             function close() {
                 formVM.isVisibleMap = false;
-                $scope.$emit(Constants.SHOW_MENU_EVENT);
             }
 
             function showLocation(event, item) {
@@ -20,7 +19,13 @@
                         latitude: lat,
                         longitude: lng
                     },
-                    markerCoords = Object.create(mapCenter);
+                    markerCoords = Object.create(mapCenter),
+                    modalScope = $scope,
+                    parameters = {
+                        scope: modalScope,
+                        animation: 'fade-in-scale'
+                    };
+
                 formVM.formattedAddress = item.street + '<br/>' + item.zipCode + '<br/>' + item.city;
                 formVM.title = 'Localisation de ' + item.name;
                 formVM.map = {
@@ -38,19 +43,33 @@
                     labelAnchor: "100 0",
                     labelClass: "marker-labels"
                 };
-                formVM.isVisibleMap = true;
-                $scope.$emit(Constants.HIDE_MENU_EVENT);
-                uiGmapIsReady.promise().then(function (maps) {
-                    $timeout(function () {
-                        google.maps.event.trigger(formVM.map, 'resize');
-                    }, 2000);
+                $ionicModal.fromTemplateUrl('templates/location.html', parameters)
+                    .then(function (modal) {
 
-                });
+                        modalScope.modal = modal;
+                        modalScope.item = item;
+
+                        modalScope.openModal = function () {
+                            modalScope.modal.show();
+                        };
+
+                        modalScope.closeModal = function () {
+                            modalScope.modal.hide();
+                        }
+
+                        modalScope.modal.show();
+                        uiGmapIsReady.promise().then(function (maps) {
+                            $timeout(function () {
+                                google.maps.event.trigger(formVM.map, 'resize');
+                            }, 2000);
+
+                        });
+                    });
+
             }
 
             formVM.close = close;
             formVM.map = {};
-
             formVM.isVisibleMap = false;
             $scope.$on(Constants.SHOW_LOCATION_EVENT, showLocation);
 
@@ -65,6 +84,8 @@
         };
     }
 
+    LocationDirective.$inject = ['Constants', '$ionicModal', 'uiGmapIsReady', '$timeout'];
+
     angular.module('location.directive', ['uiGmapgoogle-maps'])
-        .directive('location', ['Constants', '$mdDialog', 'uiGmapIsReady', '$timeout', locationDirective]);
+        .directive('location', LocationDirective);
 }());

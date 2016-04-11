@@ -31,25 +31,9 @@
             return (value === null || value === undefined || value === '');
         }
 
-        function isMobileDevice() {
-            if (navigator.userAgent.match(/Android/i) || //
-                navigator.userAgent.match(/webOS/i) || //
-                navigator.userAgent.match(/iPhone/i) || //
-                navigator.userAgent.match(/iPad/i) || //
-                navigator.userAgent.match(/iPod/i) || //
-                navigator.userAgent.match(/BlackBerry/i) || //
-                navigator.userAgent.match(/Windows Phone/i)) {
-                return true;
-            } else {
-                return false;
-            }
-            //return (window.innerWidth <= 800 && window.innerHeight <= 600);
-        }
-
         this.clone = fnClone;
         this.getIndex = getIndex;
         this.isBlank = isBlank;
-        this.isMobileDevice = isMobileDevice;
     }
 
 

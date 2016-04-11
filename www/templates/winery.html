@@ -1,0 +1,58 @@
+<ion-modal-view class="modal-content">
+    <form>
+        <ion-header-bar class="bar bar-header bg-menu-bar">
+            <h1 class="title">Détail du domaine</h1>
+            <button class="button button-icon icon ion-ios-close-empty icon-bar" ng-click="closeModal()"></button>
+        </ion-header-bar>
+        <ion-content has-header="true" padding="true">
+            <section class="vertical-panel padding">
+                <label class="item-form item-input">
+                    <span class="input-label">Nom</span>
+                    <input type="text" ng-model="item.name">
+                </label>
+                <label class="item-form item-input item-select">
+                    <span class="input-label">Région</span>
+                    <select ng-options="region as region.name for region in lists['regions'] track by region.id" ng-model="item.region"></select>
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Adresse</span>
+                    <input type="text" ng-model="item.street">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Code postal</span>
+                    <input type="text" ng-model="item.zipCode">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Ville</span>
+                    <input type="text" ng-model="item.city">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Téléphone</span>
+                    <input type="text" ng-model="item.telephone">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Email</span>
+                    <input type="text" ng-model="item.email">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Site web</span>
+                    <input type="text" ng-model="item.webSite">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Commentaire</span>
+                    <input type="text" ng-model="item.comment">
+                </label>
+                <ui-gmap-google-map ng-show="form.isVisibleMap" center="form.map.center" zoom="form.map.zoom" ng-cloak>
+                    <ui-gmap-marker coords="form.marker.coords" options="form.marker.options" events="form.marker.events" idkey="form.marker.id">
+                    </ui-gmap-marker>
+                </ui-gmap-google-map>
+            </section>
+            <section class="horizontal-panel height-40">
+                <div class="horizontal-panel-around ">
+                    <button class="button button-clear button-stable " ng-click="closeModal() ">Annuler</button>
+                    <button class="button button-clear button-positive " ng-click="saveItem(item) ">Enregistrer</button>
+                </div>
+            </section>
+        </ion-content>
+    </form>
+</ion-modal-view>

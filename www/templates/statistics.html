@@ -1,0 +1,17 @@
+<ion-view title="Statistiques" id="page1">
+    <ion-content overflow-scroll="true" padding="true" class="has-header">
+        <div class="app-statistics-content">
+            <h2>Répartition des {{ctrl.total}} bouteilles de la cave</h2>
+            <h3>Par région</h3>
+            <div flex="auto" layout="row" layout-wrap>
+                <canvas id="piePerRegion" class="chart chart-pie app-chart" chart-legend="false" chart-data="ctrl.dataPerRegion" chart-labels="ctrl.labelsPerRegion">
+                </canvas>
+            </div>
+            <h3>Par type</h3>
+            <div flex="auto" layout="row" layout-wrap>
+                <canvas id="piePerClassif" class="chart chart-pie app-chart" chart-legend="false" chart-data="ctrl.dataPerClassif" chart-labels="ctrl.labelsPerClassif">
+                </canvas>
+            </div>
+        </div>
+    </ion-content>
+</ion-view>

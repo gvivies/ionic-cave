@@ -1,70 +1,91 @@
-//=require_self
-
 (function () {
-
     'use strict';
 
-    function WineriesCtrl($scope, $rootScope, $q, CrudService, Constants, FormService, UtilService, $mdDialog, ConfirmService, GeoCodeService) {
-
+    function WineriesCtrl($scope, Constants, CrudService, FormService, AuthService, UtilService, GeoCodeService, $ionicModal) {
         var viewModel = this,
-            formLists = [];
+            formLists = [],
+            dialog;
 
-        // --- Handler functions 
-        function onShowMenuEventHandler() {
-            viewModel.displayMenu = true;
+        function onModuleLoad() {
+            viewModel.items = CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINERIES_URI).list();
+            initEditForm();
         }
 
-        function onHideMenuEventHandler() {
-            viewModel.displayMenu = false;
+        // Fill regions select objects list 
+        // and declares setings parameter for wine form
+        function initEditForm() {
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.REGIONS_URI)
+                .list(function (listRegions) {
+                    formLists.push({
+                        'name': 'regions',
+                        'content': listRegions
+                    });
+                    viewModel.regions = listRegions;
+                    //viewModel.regions.unshift({
+                    //    'name': ''
+                    //});
+                });
+
+            viewModel.formSettings = {
+                templateUrl: 'templates/winery.html',
+                lists: formLists
+            };
         }
 
-        function createItemHandler() {
-            FormService.showForm($scope, {}, viewModel.formSettings);
+        function updateItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+
+            geoCodeThis(item);
+
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINERIES_URI)
+                .update(item, function onSaveSuccess() {
+                    // Updated in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    if (idx >= 0) {
+                        viewModel.items[idx] = item;
+                    }
+                }, function onSaveError() {
+                    // TODO Error message
+                });
+        }
+
+        function insertItem(item) {
+            item.ownedBy = AuthService.getAuthenticatedUser().id;
+
+            geoCodeThis(item);
+
+            CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINERIES_URI)
+                .create(item, function onSaveSuccess() {
+                    // Insert in current list
+                    var idx = UtilService.getIndex(item.id, viewModel.items);
+                    viewModel.items.push(item);
+                }, function onSaveError() {
+                    // TODO Error message
+                });
         }
 
         function editItemHandler(item) {
-            FormService.showForm($scope, UtilService.clone(item), viewModel.formSettings);
+            viewModel.formSettings.save = updateItem;
+            dialog = FormService.show(UtilService.clone(item), viewModel.formSettings);
         }
 
-        function onCreatedItemEventHandler(event, item) {
-            viewModel.items.push(item);
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Le domaine " + item.name + " a été créé avec succès");
-        }
-
-        function onUpdatedItemEventHandler(event, item) {
-            var idx = UtilService.getIndex(item.id, viewModel.items);
-            if (idx >= 0) {
-                viewModel.items[idx] = item;
-            }
-            $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Le domaine " + item.name + " a été modifié avec succès");
+        function createItemHandler() {
+            viewModel.formSettings.save = insertItem;
+            dialog = FormService.show({}, viewModel.formSettings);
         }
 
         function deleteItemHandler(item) {
-            function removeItem() {
-                function onRemoveError() {
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
-                }
-
-                function onRemoveSuccess() {
-                    var itemList = $scope.ctrl.items,
-                        idx = itemList.indexOf(item);
-                    itemList.splice(idx, 1);
-                    $scope.$emit(Constants.DISPLAY_MSG_EVENT, "La suppression de " + item.name + " a été effectuée avec succès");
-                }
-                CrudService.resource(Constants.WINERIES_URI + '/' + item.id)
-                    .remove(onRemoveSuccess, onRemoveError);
+            if (confirm("Voulez-vous vraiment supprimer ce domaine ?")) {
+                CrudService.resource(Constants.DEFAULT_BACKEND_URL + '/' + Constants.WINERIES_URI + '/' + item.id)
+                    .remove(
+                        function onRemoveSuccess() {
+                            var idx = viewModel.items.indexOf(item);
+                            viewModel.items.splice(idx, 1);
+                        },
+                        function onRemoveError() {
+                            //$scope.$emit(Constants.DISPLAY_MSG_EVENT, "Une erreur est survenue lors de la suppression de " + item.name);
+                        });
             }
-            ConfirmService.confirmDelete(item, 'le domaine')
-                .then(removeItem);
-        }
-
-        function localizableHandler(item) {
-            return !UtilService.isBlank(item.city);
-        }
-
-        // --- Location Map 
-        function showLocationHandler(item) {
-            $scope.$emit(Constants.SHOW_LOCATION_EVENT, item);
         }
 
         // --- Google geocoding API
@@ -88,47 +109,71 @@
             return defer.promise;
         }
 
-        function initForm(listRegions) {
-            formLists.push({
-                'name': 'regions',
-                'content': listRegions
-            });
+        // --- Location Map 
+        function showLocationHandler(item) {
 
-            viewModel.formSettings = {
-                size: "xxl",
-                template: "winery.html",
-                uri: Constants.WINERIES_URI,
-                lists: formLists,
-                beforeSave: geoCodeThis
+            var lat = parseFloat(item.latitude),
+                lng = parseFloat(item.longitude),
+                mapCenter = {
+                    latitude: lat,
+                    longitude: lng
+                },
+                markerCoords = Object.create(mapCenter),
+                modalScope = $scope,
+                parameters = {
+                    scope: modalScope,
+                    animation: 'fade-in-scale'
+                };
+
+            modalScope.formattedAddress = item.street + '<br/>' + item.zipCode + '<br/>' + item.city;
+            modalScope.title = 'Localisation de ' + item.name;
+            modalScope.map = {
+                center: mapCenter,
+                zoom: 12
             };
+            modalScope.marker = {
+                id: 0,
+                coords: markerCoords,
+                title: item.name
+            };
+            modalScope.marker.options = {
+                draggable: false,
+                labelContent: modalScope.formattedAddress,
+                labelAnchor: "100 0",
+                labelClass: "marker-labels"
+            };
+
+            $ionicModal.fromTemplateUrl('templates/location.html', parameters)
+                .then(function (modal) {
+
+                    modalScope.modal = modal;
+                    modalScope.item = item;
+
+                    modalScope.openModal = function () {
+                        modalScope.modal.show();
+                    };
+
+                    modalScope.closeModal = function () {
+                        modalScope.modal.hide();
+                    }
+
+                    modalScope.modal.show();
+                });
+
         }
 
-        // --- Attaching functions and events handler
-
         viewModel.editItem = editItemHandler;
+        viewModel.createItem = createItemHandler;
         viewModel.deleteItem = deleteItemHandler;
         viewModel.showLocation = showLocationHandler;
-        viewModel.localizable = localizableHandler;
 
-        $scope.$on(Constants.CREATED_ITEM_EVENT, onCreatedItemEventHandler);
-        $scope.$on(Constants.UPDATED_ITEM_EVENT, onUpdatedItemEventHandler);
-        $scope.$on(Constants.SHOW_MENU_EVENT, onShowMenuEventHandler);
-        $scope.$on(Constants.HIDE_MENU_EVENT, onHideMenuEventHandler);
-        $scope.$on(Constants.ADD_CLICK_EVENT, createItemHandler);
-
-        // --- On load
-
-        viewModel.items = CrudService.resource(Constants.WINERIES_URI).list();
-        viewModel.regions = CrudService.resource(Constants.REGIONS_URI).list(initForm);
-
-        $rootScope.addItemElement = true;
-        $scope.$emit(Constants.SHOW_MENU_EVENT);
+        onModuleLoad();
 
     }
 
-    WineriesCtrl.$inject = ['$scope', '$rootScope', '$q', 'CrudService', 'Constants', 'FormService', 'UtilService', '$mdDialog', 'ConfirmService', 'GeoCodeService'];
+    WineriesCtrl.$inject = ['$scope', 'Constants', 'CrudService', 'FormService', 'AuthService', 'UtilService', 'GeoCodeService', '$ionicModal'];
 
-    angular.module('wineries.controller', [])
-        .controller('WineriesCtrl', WineriesCtrl);
+    angular.module('wineries.controller')
+        .controller('wineriesCtrl', WineriesCtrl);
 
 }());

@@ -1,0 +1,37 @@
+<ion-modal-view class="modal-content">
+    <form>
+        <ion-header-bar class="bar bar-header bg-menu-bar">
+            <h1 class="title">Détail de l'utilisateur</h1>
+            <button class="button button-icon icon ion-ios-close-empty icon-bar" ng-click="closeModal()"></button>
+        </ion-header-bar>
+        <ion-content has-header="true" padding="true">
+            <section class="vertical-panel padding">
+                <label class="item-form item-input">
+                    <span class="input-label">Nom</span>
+                    <input type="text" ng-model="item.username">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Email</span>
+                    <input type="text" ng-model="item.email">
+                </label>
+                <label class="item-form item-input item-select">
+                    <span class="input-label">Rôle - {{ item.role }}</span>
+                    <!--
+                    <select ng-options="r.roleName for r in lists['roles'] track by r.index" ng-model="item.role"></select>
+                    -->
+                    <select ng-model="item.role" ng-options="role.id as role.roleName for role in lists['roles']"></select>
+                    <!--
+                    <select ng-model="item.role" required>
+                        <option ng-repeat="rol in lists['roles'] track by rol.id">{{ rol.roleName }}</option>
+                    </select> -->
+                </label>
+            </section>
+            <section class="horizontal-panel height-40 padding">
+                <div class="horizontal-panel-around ">
+                    <button class="button button-clear button-stable " ng-click="closeModal() ">Annuler</button>
+                    <button class="button button-clear button-positive " ng-click="saveItem(item) ">Enregistrer</button>
+                </div>
+            </section>
+        </ion-content>
+    </form>
+</ion-modal-view>

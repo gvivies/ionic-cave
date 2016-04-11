@@ -1,0 +1,63 @@
+<ion-modal-view class="modal-content">
+    <form>
+        <ion-header-bar class="bar bar-header bg-menu-bar">
+            <h1 class="title">Détail des bouteilles</h1>
+            <button class="button button-icon icon ion-ios-close-empty icon-bar" ng-click="closeModal()"></button>
+        </ion-header-bar>
+        <ion-content has-header="true" padding="true">
+            <section class="vertical-panel padding">
+                <label class="item-form item-input">
+                    <span class="input-label">Nom</span>
+                    <input type="text" ng-model="item.name">
+                </label>
+                <label class="item-form item-input item-select">
+                    <span class="input-label">Appellation</span>
+                    <select ng-options="wine as wine.name for wine in lists['wines'] track by wine.id" ng-model="item.wine"></select>
+                </label>
+                <label class="item-form item-input item-select">
+                    <span class="input-label">Type</span>
+                    <select ng-options="classif as classif.name for classif in lists['classifications'] track by classif.id" ng-model="item.classification"></select>
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Millesime</span>
+                    <input type="text" ng-model="item.year">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">A boire à partir de </span>
+                    <input type="text" ng-model="item.yearMin">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Jusqu'en</span>
+                    <input type="text" ng-model="item.yearMax">
+                </label>
+                <label class="item-form item-input">
+                    <span class="input-label">Quantité</span>
+                    <input type="text" ng-model="item.quantity">
+                </label>
+                <label class="item-form item-input item-select">
+                    <span class="input-label ">Domaine</span>
+                    <select ng-options="dealer as dealer.name for dealer in lists[ 'wineries'] track by dealer.id " ng-model="item.dealer "></select>
+                </label>
+                <label class="item item-input item-form">
+                    <span class="input-label ">Commentaire</span>
+                    <textarea ng-model="item.comment " rows="5 "></textarea>
+                </label>
+                <label class="item-form item-toggle">
+                    En commande
+                    <label class="toggle toggle-positive">
+                        <input type="checkbox" ng-model="item.ordered ">
+                        <div class="track">
+                            <div class="handle"></div>
+                        </div>
+                    </label>
+                </label>
+            </section>
+            <section class="horizontal-panel height-40 ">
+                <div class="horizontal-panel-around ">
+                    <button class="button button-clear button-stable " ng-click="closeModal() ">Annuler</button>
+                    <button class="button button-clear button-positive " ng-click="saveItem(item) ">Enregistrer</button>
+                </div>
+            </section>
+        </ion-content>
+    </form>
+</ion-modal-view>
