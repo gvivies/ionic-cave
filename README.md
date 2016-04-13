@@ -1,7 +1,7 @@
 Ionic Cave
 ==========
 
-This repository contains Ionic Framework 1.x code of my Cave project. This mobile application is built to connect to backend [spring-boot-cave](https://github.com/gvivies/spring-boot-cave). 
+This repository contains Ionic Framework 1.x code of my Cave project. This mobile application is built to connect to backend [spring-boot-cave-jwt](https://github.com/gvivies/spring-boot-cave-jwt). 
 
 ### Additional 3rd libraries
 
